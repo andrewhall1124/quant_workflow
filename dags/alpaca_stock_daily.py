@@ -5,10 +5,11 @@ import numpy as np
 import pendulum
 from dotenv import load_dotenv
 
-from airflow.decorators import dag, task
+from airflow.decorators import dag, task, task
 from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.utils.task_group import TaskGroup
 
 from alpaca.data.historical.stock import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest 
@@ -39,18 +40,22 @@ trading_client = TradingClient(api_key,secret_key)
 )
 def alpaca_stock_daily():
 
-    create_assets_table = PostgresOperator(
-    task_id="create_assets_table",
-    postgres_conn_id="pg_database",
-    sql="sql/create_assets_table.sql",
-    )
+    with TaskGroup("preparation") as preparation:
 
-    create_temp_assets_table = PostgresOperator(
-        task_id="create_temp_assets_table",
+        create_assets_table = PostgresOperator(
+        task_id="create_assets_table",
         postgres_conn_id="pg_database",
-    sql="sql/create_temp_assets_table.sql",
-    )
-    
+        sql="sql/create_assets_table.sql",
+        )
+
+        create_temp_assets_table = PostgresOperator(
+            task_id="create_temp_assets_table",
+            postgres_conn_id="pg_database",
+        sql="sql/create_temp_assets_table.sql",
+        )
+
+        [create_assets_table, create_temp_assets_table]   
+         
     @task()
     def extract():
 
@@ -86,7 +91,7 @@ def alpaca_stock_daily():
     sql="sql/merge_temp_into_assets_table.sql",
     )
 
-    [create_assets_table, create_temp_assets_table] >> extract() >> load
+    preparation >> extract() >> load
 
 
 
