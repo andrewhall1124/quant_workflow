@@ -31,7 +31,7 @@ start = end.subtract(days=2)
 
 # Get all current assets
 asset_request = GetAssetsRequest(
-    status = AssetStatus.ACTIVE,
+    # status = AssetStatus.ACTIVE,
     asset_class = AssetClass.US_EQUITY,
 )
 
@@ -41,7 +41,7 @@ all_assets = [vars(asset) for asset in all_assets] # Convert objects to dicts
 
 df = pd.DataFrame(data=all_assets)
 
-df = df[df['tradable'] & df['fractionable'] & df['shortable']]
+# df = df[df['tradable'] & df['fractionable'] & df['shortable']]
 
 symbols = df['symbol'].to_list()
 
