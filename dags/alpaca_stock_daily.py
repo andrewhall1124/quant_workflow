@@ -54,9 +54,8 @@ def alpaca_stock_daily():
     @task()
     def extract():
 
-        # Get all current assets
+        # Get all assets
         asset_request = GetAssetsRequest(
-            # status = AssetStatus.ACTIVE,
             asset_class = AssetClass.US_EQUITY,
         )
 
@@ -65,8 +64,6 @@ def alpaca_stock_daily():
         all_assets = [vars(asset) for asset in all_assets] # Convert objects to dicts
 
         df = pd.DataFrame(data=all_assets)
-
-        # df = df[df['tradable'] & df['fractionable'] & df['shortable']]
 
         data_path = "assets.csv"
 
@@ -81,16 +78,7 @@ def alpaca_stock_daily():
                 file,
             )
         conn.commit()
- 
-    # @task()
-    # def transform():
-    #     return
 
-    # @task()
-    # def load():
-    #     return
-
-
-    [create_assets_table, create_temp_assets_table] >> extract() #>> transform() >> load()
+    [create_assets_table, create_temp_assets_table] >> extract()
     
 alpaca_stock_daily()
