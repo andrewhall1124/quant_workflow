@@ -79,6 +79,16 @@ def alpaca_stock_daily():
             )
         conn.commit()
 
-    [create_assets_table, create_temp_assets_table] >> extract()
+
+    load = PostgresOperator(
+        task_id="load",
+        postgres_conn_id="pg_database",
+    sql="sql/merge_temp_into_assets_table.sql",
+    )
+
+    [create_assets_table, create_temp_assets_table] >> extract() >> load
+
+
+
     
 alpaca_stock_daily()
