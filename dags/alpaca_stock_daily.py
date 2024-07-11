@@ -59,7 +59,7 @@ def alpaca_stock_daily():
             [create_assets_table, create_temp_assets_table]   
             
         @task()
-        def extract():
+        def extract(run_id):
 
             # Get all assets
             asset_request = GetAssetsRequest(
@@ -71,6 +71,9 @@ def alpaca_stock_daily():
             all_assets = [vars(asset) for asset in all_assets] # Convert objects to dicts
 
             df = pd.DataFrame(data=all_assets)
+
+            df['insert_id'] = run_id
+            df['update_id'] = run_id
 
             data_path = "assets.csv"
 
@@ -130,10 +133,10 @@ def alpaca_stock_daily():
 
 
         @task
-        def extract(symbols, logical_date):
+        def extract(symbols, data_interval_start, data_interval_end):
             # Parameters
-            end = logical_date.subtract(days=1)
-            start = end.subtract(days=1)
+            end = data_interval_end
+            start = data_interval_start
 
             # Get previous days market data
             bars_request = StockBarsRequest(
