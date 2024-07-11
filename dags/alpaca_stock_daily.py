@@ -133,7 +133,7 @@ def alpaca_stock_daily():
 
 
         @task
-        def extract(symbols, data_interval_start, data_interval_end):
+        def extract(symbols, data_interval_start, data_interval_end, run_id):
             # Parameters
             end = data_interval_end
             start = data_interval_start
@@ -152,6 +152,9 @@ def alpaca_stock_daily():
             df = bars.df
 
             df = df.reset_index()
+
+            df['insert_id'] = run_id
+            df['update_id'] = run_id
 
             data_path = "historical_data.csv"
 
