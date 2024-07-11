@@ -5,7 +5,7 @@ import numpy as np
 import pendulum
 from dotenv import load_dotenv
 
-from airflow.decorators import dag, task, task
+from airflow.decorators import dag, task, task_group
 from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -32,13 +32,13 @@ data_client = StockHistoricalDataClient(api_key,secret_key)
 trading_client = TradingClient(api_key,secret_key)
 
 @dag(
-    schedule='@daily',
-    start_date=pendulum.datetime(2024, 7, 4),
-    catchup=False,
-    tags=["example"],
+    schedule='@monthly',
+    start_date=pendulum.datetime(2016, 1, 1),
+    catchup=True,
+    tags=["alpaca", "history", "monthly"],
     default_view='graph'
 )
-def alpaca_stock_daily():
+def alpaca_stock_history():
 
     with TaskGroup("get_all_assets") as get_all_assets:
 
@@ -95,7 +95,8 @@ def alpaca_stock_daily():
 
         setup >> extract() >> load
     
-    with TaskGroup("get_historical_data") as get_historical_data:
+    @task_group
+    def get_historical_data():
 
         with TaskGroup("setup") as setup:
 
@@ -114,9 +115,9 @@ def alpaca_stock_daily():
             [create_assets_table, create_temp_assets_table]  
 
         @task
-        def get_current_symbols():
+        def get_all_symbols():
             query = """
-                SELECT DISTINCT SYMBOL FROM ASSETS WHERE STATUS = 'active' AND TRADABLE = TRUE AND FRACTIONABLE = TRUE AND SHORTABLE = TRUE;
+                SELECT DISTINCT SYMBOL FROM ASSETS WHERE TRADABLE = true AND FRACTIONABLE = true AND SHORTABLE = true;
             """
 
             postgres_hook = PostgresHook(postgres_conn_id="pg_database")
@@ -130,12 +131,11 @@ def alpaca_stock_daily():
 
 
         @task
-        def extract(symbols, logical_date):
+        def extract(symbols, data_interval_start, data_interval_end):
             # Parameters
-            end = logical_date.subtract(days=1)
-            start = end.subtract(days=1)
+            end = data_interval_end
+            start = data_interval_start
 
-            # Get previous days market data
             bars_request = StockBarsRequest(
                 symbol_or_symbols=symbols,
                 timeframe=TimeFrame(1,TimeFrameUnit.Day),
@@ -171,11 +171,11 @@ def alpaca_stock_daily():
         )
 
         
-        symbols = get_current_symbols()
+        symbols = get_all_symbols()
         
         setup >> extract(symbols) >> load
 
 
-    get_all_assets >> get_historical_data
+    get_all_assets >> get_historical_data()
     
-alpaca_stock_daily()
+alpaca_stock_history()
