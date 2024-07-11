@@ -30,12 +30,19 @@ secret_key = Variable.get("ALPACA_SECRET_KEY")
 data_client = StockHistoricalDataClient(api_key,secret_key)
 trading_client = TradingClient(api_key,secret_key)
 
+# Arguments
+default_args = {
+    'retries': 0,
+    'retry_delay': pendulum.duration(minutes=1),
+}
+
 @dag(
     schedule='@monthly',
     start_date=pendulum.datetime(2016, 1, 1),
-    catchup=True,
+    catchup=False,
     tags=["alpaca","monthly","history"],
-    default_view='graph'
+    default_view='graph',
+    default_args=default_args
 )
 def alpaca_stock_history():
 
@@ -46,15 +53,15 @@ def alpaca_stock_history():
         def setup():
 
             create_assets_table = PostgresOperator(
-            task_id="create_assets_table",
-            postgres_conn_id="pg_database",
-            sql="sql/create_assets_table.sql",
+                task_id="create_assets_table",
+                postgres_conn_id="pg_database",
+                sql="sql/create_assets_table.sql",
             )
 
             create_temp_assets_table = PostgresOperator(
                 task_id="create_temp_assets_table",
                 postgres_conn_id="pg_database",
-            sql="sql/create_temp_assets_table.sql",
+                sql="sql/create_temp_assets_table.sql",
             )
 
             [create_assets_table, create_temp_assets_table]   
@@ -85,7 +92,7 @@ def alpaca_stock_history():
             cur = conn.cursor()
             with open(data_path, "r") as file:
                 cur.copy_expert(
-                    "COPY TEMP_ASSETS FROM STDIN WITH CSV HEADER DELIMITER AS ',' QUOTE '\"'",
+                    f"COPY \"TEMP_ASSETS_{run_id}\" FROM STDIN WITH CSV HEADER DELIMITER AS ',' QUOTE '\"'",
                     file,
                 )
             conn.commit()
@@ -94,10 +101,16 @@ def alpaca_stock_history():
         load = PostgresOperator(
             task_id="load",
             postgres_conn_id="pg_database",
-        sql="sql/merge_temp_into_assets_table.sql",
+            sql="sql/merge_temp_into_assets_table.sql",
         )
 
-        setup() >> extract() >> load
+        cleanup = PostgresOperator(
+            task_id="cleanup",
+            postgres_conn_id="pg_database",
+            sql="DROP TABLE \"TEMP_ASSETS_{{run_id}}\"",
+        )
+
+        setup() >> extract() >> load >> cleanup
     
     @task_group
     def download_and_load_historical_data():
