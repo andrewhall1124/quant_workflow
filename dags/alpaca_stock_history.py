@@ -178,7 +178,7 @@ def alpaca_stock_history():
             cur = conn.cursor()
             with open(data_path, "r") as file:
                 cur.copy_expert(
-                    "COPY TEMP_HISTORICAL_DATA FROM STDIN WITH CSV HEADER DELIMITER AS ',' QUOTE '\"'",
+                    f"COPY \"TEMP_HISTORICAL_DATA_{run_id}\" FROM STDIN WITH CSV HEADER DELIMITER AS ',' QUOTE '\"'",
                     file,
                 )
             conn.commit()
@@ -189,10 +189,16 @@ def alpaca_stock_history():
             sql="sql/merge_temp_into_historical_data_table.sql",
         )
 
+        cleanup = PostgresOperator(
+            task_id="cleanup",
+            postgres_conn_id="pg_database",
+            sql="DROP TABLE \"TEMP_HISTORICAL_DATA_{{run_id}}\"",
+        )
+
         
         symbols = get_current_symbols()
         
-        setup() >> extract(symbols) >> load
+        setup() >> extract(symbols) >> load >> cleanup
 
 
     download_and_load_assets() >> download_and_load_historical_data()
