@@ -35,14 +35,16 @@ trading_client = TradingClient(api_key,secret_key)
     schedule='@monthly',
     start_date=pendulum.datetime(2016, 1, 1),
     catchup=True,
-    tags=["alpaca", "history", "monthly"],
+    tags=["example"],
     default_view='graph'
 )
 def alpaca_stock_history():
 
-    with TaskGroup("get_all_assets") as get_all_assets:
+    @task_group
+    def download_and_load_assets():
 
-        with TaskGroup("setup") as setup:
+        @task_group
+        def setup():
 
             create_assets_table = PostgresOperator(
             task_id="create_assets_table",
@@ -59,7 +61,7 @@ def alpaca_stock_history():
             [create_assets_table, create_temp_assets_table]   
             
         @task()
-        def extract():
+        def extract(run_id):
 
             # Get all assets
             asset_request = GetAssetsRequest(
@@ -71,6 +73,9 @@ def alpaca_stock_history():
             all_assets = [vars(asset) for asset in all_assets] # Convert objects to dicts
 
             df = pd.DataFrame(data=all_assets)
+
+            df['insert_id'] = run_id
+            df['update_id'] = run_id
 
             data_path = "assets.csv"
 
@@ -93,12 +98,13 @@ def alpaca_stock_history():
         sql="sql/merge_temp_into_assets_table.sql",
         )
 
-        setup >> extract() >> load
+        setup() >> extract() >> load
     
     @task_group
-    def get_historical_data():
+    def download_and_load_historical_data():
 
-        with TaskGroup("setup") as setup:
+        @task_group
+        def setup():
 
             create_assets_table = PostgresOperator(
             task_id="create_historical_data_table",
@@ -115,9 +121,9 @@ def alpaca_stock_history():
             [create_assets_table, create_temp_assets_table]  
 
         @task
-        def get_all_symbols():
+        def get_current_symbols():
             query = """
-                SELECT DISTINCT SYMBOL FROM ASSETS WHERE TRADABLE = true AND FRACTIONABLE = true AND SHORTABLE = true;
+                SELECT DISTINCT SYMBOL FROM ASSETS WHERE STATUS = 'active' AND TRADABLE = TRUE AND FRACTIONABLE = TRUE AND SHORTABLE = TRUE;
             """
 
             postgres_hook = PostgresHook(postgres_conn_id="pg_database")
@@ -127,11 +133,9 @@ def alpaca_stock_history():
             symbols = [row[0] for row in cur.fetchall()]
             conn.commit()
             return symbols
-
-
-
+            
         @task
-        def extract(symbols, data_interval_start, data_interval_end):
+        def extract(symbols, data_interval_start, data_interval_end, run_id):
             # Parameters
             end = data_interval_end
             start = data_interval_start
@@ -149,6 +153,9 @@ def alpaca_stock_history():
             df = bars.df
 
             df = df.reset_index()
+
+            df['insert_id'] = run_id
+            df['update_id'] = run_id
 
             data_path = "historical_data.csv"
 
@@ -171,11 +178,11 @@ def alpaca_stock_history():
         )
 
         
-        symbols = get_all_symbols()
+        symbols = get_current_symbols()
         
-        setup >> extract(symbols) >> load
+        setup() >> extract(symbols) >> load
 
 
-    get_all_assets >> get_historical_data()
+    download_and_load_assets() >> download_and_load_historical_data()
     
 alpaca_stock_history()

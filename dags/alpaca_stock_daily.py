@@ -5,7 +5,7 @@ import numpy as np
 import pendulum
 from dotenv import load_dotenv
 
-from airflow.decorators import dag, task, task
+from airflow.decorators import dag, task, task_group
 from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -40,9 +40,11 @@ trading_client = TradingClient(api_key,secret_key)
 )
 def alpaca_stock_daily():
 
-    with TaskGroup("get_all_assets") as get_all_assets:
+    @task_group
+    def download_and_load_assets():
 
-        with TaskGroup("setup") as setup:
+        @task_group
+        def setup():
 
             create_assets_table = PostgresOperator(
             task_id="create_assets_table",
@@ -96,11 +98,13 @@ def alpaca_stock_daily():
         sql="sql/merge_temp_into_assets_table.sql",
         )
 
-        setup >> extract() >> load
+        setup() >> extract() >> load
     
-    with TaskGroup("get_historical_data") as get_historical_data:
+    @task_group
+    def download_and_load_historical_data():
 
-        with TaskGroup("setup") as setup:
+        @task_group
+        def setup():
 
             create_assets_table = PostgresOperator(
             task_id="create_historical_data_table",
@@ -129,9 +133,7 @@ def alpaca_stock_daily():
             symbols = [row[0] for row in cur.fetchall()]
             conn.commit()
             return symbols
-
-
-
+        
         @task
         def extract(symbols, data_interval_start, data_interval_end, run_id):
             # Parameters
@@ -179,9 +181,9 @@ def alpaca_stock_daily():
         
         symbols = get_current_symbols()
         
-        setup >> extract(symbols) >> load
+        setup() >> extract(symbols) >> load
 
 
-    get_all_assets >> get_historical_data
+    download_and_load_assets() >> download_and_load_historical_data()
     
 alpaca_stock_daily()
