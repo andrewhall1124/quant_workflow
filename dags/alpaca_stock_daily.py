@@ -35,7 +35,7 @@ trading_client = TradingClient(api_key,secret_key)
     schedule='@daily',
     start_date=pendulum.datetime(2024, 7, 4),
     catchup=False,
-    tags=["example"],
+    tags=["alpaca","daily"],
     default_view='graph'
 )
 def alpaca_stock_daily():

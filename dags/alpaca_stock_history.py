@@ -35,7 +35,7 @@ trading_client = TradingClient(api_key,secret_key)
     schedule='@monthly',
     start_date=pendulum.datetime(2016, 1, 1),
     catchup=True,
-    tags=["example"],
+    tags=["alpaca","monthly","history"],
     default_view='graph'
 )
 def alpaca_stock_history():
