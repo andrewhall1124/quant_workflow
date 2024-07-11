@@ -9,7 +9,6 @@ from airflow.decorators import dag, task, task_group
 from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.utils.task_group import TaskGroup
 
 from alpaca.data.historical.stock import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest 
@@ -33,8 +32,8 @@ trading_client = TradingClient(api_key,secret_key)
 
 @dag(
     schedule='@daily',
-    start_date=pendulum.datetime(2024, 7, 4),
-    catchup=False,
+    start_date=pendulum.datetime(2024, 6, 30),
+    catchup=True,
     tags=["alpaca","daily"],
     default_view='graph'
 )
