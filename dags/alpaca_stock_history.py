@@ -32,16 +32,17 @@ trading_client = TradingClient(api_key,secret_key)
 
 # Arguments
 default_args = {
-    'retries': 0,
-    'retry_delay': pendulum.duration(minutes=1),
+    'retries': 10,
+    'retry_delay': pendulum.duration(minutes=5),
 }
 
 @dag(
     schedule='@monthly',
     start_date=pendulum.datetime(2016, 1, 1),
-    catchup=False,
+    catchup=True,
     tags=["alpaca","monthly","history"],
     default_view='graph',
+    concurrency=10,
     default_args=default_args
 )
 def alpaca_stock_history():
