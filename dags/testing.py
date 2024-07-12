@@ -35,7 +35,7 @@ trading_client = TradingClient(api_key,secret_key)
     schedule='@daily',
     start_date=pendulum.datetime(2016, 1, 1),
     catchup=False,
-    tags=["alpaca", "history"],
+    tags=["testing"],
     default_view='graph'
 )
 def testing():

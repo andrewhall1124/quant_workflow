@@ -22,19 +22,22 @@ class TradingEngine:
     def get_account_value(self):
         account = self.trading_client.get_account()
 
-        return account.cash    
+        return float(account.cash)    
         
 
     def sell_current_positions(self):
         self.trading_client.close_all_positions()
 
+    def cancel_all_orders(self):
+        self.trading_client.cancel_orders()
 
-    def buy_new_positions(self, df: pd.DataFrame, total_notional):
+
+    def buy_new_positions(self, df: pd.DataFrame, total_notional: float):
         
-        for order in df.iterrows():
+        for index, order in df.iterrows():
 
             symbol = order['symbol']
-            notional = total_notional * order['weight']
+            notional = round((total_notional * order['weight']),2)
 
             order_request = OrderRequest(
                 symbol=symbol,
@@ -44,6 +47,6 @@ class TradingEngine:
                 time_in_force=TimeInForce.DAY
             )
 
-            result = self.trading_client.submit_order(order_request)
+            self.trading_client.submit_order(order_request)
 
-            print(result)
+            print(f"Submitted order for {order['symbol']}")

@@ -17,10 +17,10 @@ from classes.trading_engine import TradingEngine
 def fip_trading_monthly():
     
     @task
-    def get_stock_data() -> pd.DataFrame:
+    def get_stock_data(data_interval_end) -> pd.DataFrame:
         db = DB()
 
-        end = pendulum.datetime(2024,6,30)
+        end = data_interval_end.subtract(days=1)
         start = end.subtract(months=13)
 
         query_string = f'''
@@ -35,16 +35,12 @@ def fip_trading_monthly():
 
         df = db.execute_df(query_string)
 
-        print(df)
-
         return df
      
     @task
     def compute_portfolio(df: pd.DataFrame) -> pd.DataFrame:
-        print(df)
         num_positions = 100
         portfolio = fip_model(df, num_positions)
-        print(portfolio)
         return portfolio
     
     @task
@@ -52,8 +48,12 @@ def fip_trading_monthly():
         TradingEngine().sell_current_positions()
 
     @task
+    def cancel_current_orders():
+        TradingEngine().cancel_all_orders()
+
+    @task
     def get_account_value():
-        TradingEngine().get_account_value()
+        return TradingEngine().get_account_value()
 
     @task
     def buy_new_portfolio(df, total_notional):
@@ -62,9 +62,8 @@ def fip_trading_monthly():
     
     data = get_stock_data()
     portfolio = compute_portfolio(data)
-    total_notional = get_account_value()
-
-    sell_current_portfolio() >> buy_new_portfolio(portfolio, total_notional)
+    total_notional = cancel_current_orders() >> sell_current_portfolio() >> get_account_value()
+    buy_new_portfolio(portfolio, total_notional)
     
     
 fip_trading_monthly()
