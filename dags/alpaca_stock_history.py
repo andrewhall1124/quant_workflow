@@ -1,9 +1,5 @@
-import json
 import pendulum
 import pandas as pd
-import numpy as np
-import pendulum
-from dotenv import load_dotenv
 
 from airflow.decorators import dag, task, task_group
 from airflow.models import Variable
