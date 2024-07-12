@@ -44,4 +44,4 @@ class DB:
     def __del__(self):
         self.cur.close()
         self.conn.close()
-        self.engine.dispose()
+        # self.engine.dispose()
