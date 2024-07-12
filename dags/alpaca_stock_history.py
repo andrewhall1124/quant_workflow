@@ -34,7 +34,7 @@ default_args = {
 
 @dag(
     schedule='@monthly',
-    start_date=pendulum.datetime(2016, 1, 1),
+    start_date=pendulum.datetime(2023, 1, 1),
     catchup=True,
     tags=["alpaca","monthly","history"],
     default_view='graph',
