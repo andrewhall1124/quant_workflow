@@ -26,12 +26,19 @@ secret_key = Variable.get("ALPACA_SECRET_KEY")
 data_client = StockHistoricalDataClient(api_key,secret_key)
 trading_client = TradingClient(api_key,secret_key)
 
+# Arguments
+default_args = {
+    'retries': 6,
+    'retry_delay': pendulum.duration(hours=1),
+}
+
 @dag(
     schedule='@daily',
     start_date=pendulum.datetime(2024, 6, 30),
     catchup=True,
     tags=["alpaca","daily"],
-    default_view='graph'
+    default_view='graph',
+    default_args=default_args
 )
 def alpaca_stock_daily():
 
