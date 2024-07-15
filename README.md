@@ -1,6 +1,6 @@
 # Stock Market Data Pipeline and Trading System
 
-This repository contains an application that uses Apache Airflow to orchestrate a data pipeline process for storing stock market data from the Alpaca Stock Market History API. The application handles both daily and monthly data frequencies and also includes a DAG that trades portfolios based on information discreteness and momentum.
+This repository contains an application that uses Apache Airflow to orchestrate a data pipeline process for storing stock market data from the Alpaca Stock Market History API. The application handles both daily and monthly data frequencies and also includes a DAG that trades [Frog in the Pan](https://www3.nd.edu/~zda/Frog.pdf) Portfolios.
 
 ## Table of Contents
 
