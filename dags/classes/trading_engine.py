@@ -16,7 +16,6 @@ class TradingEngine:
         api_key = Variable.get("ALPACA_API_KEY")
         secret_key = Variable.get("ALPACA_SECRET_KEY")
 
-        # Clients
         self.trading_client = TradingClient(api_key,secret_key)
     
     def get_account_value(self):
