@@ -33,7 +33,7 @@ default_args = {
 }
 
 @dag(
-    schedule_interval='0 1 * * *',
+    schedule_interval='0 2 * * *',
     start_date=pendulum.datetime(2024, 6, 30),
     catchup=True,
     tags=["alpaca","daily"],
