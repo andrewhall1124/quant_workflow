@@ -28,12 +28,12 @@ trading_client = TradingClient(api_key,secret_key)
 
 # Arguments
 default_args = {
-    'retries': 6,
+    'retries': 3,
     'retry_delay': pendulum.duration(hours=1),
 }
 
 @dag(
-    schedule_interval='0 2 * * *',
+    schedule_interval='@daily',
     start_date=pendulum.datetime(2024, 6, 30),
     catchup=True,
     tags=["alpaca","daily"],
