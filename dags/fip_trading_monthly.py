@@ -39,7 +39,7 @@ def fip_trading_monthly():
      
     @task
     def compute_portfolio(df: pd.DataFrame) -> pd.DataFrame:
-        num_positions = 100
+        num_positions = 25
         portfolio = fip_model(df, num_positions)
         return portfolio
     

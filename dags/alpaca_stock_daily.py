@@ -28,8 +28,10 @@ trading_client = TradingClient(api_key,secret_key)
 
 # Arguments
 default_args = {
-    'retries': 3,
-    'retry_delay': pendulum.duration(hours=1),
+    'retries': 10,
+    'retry_delay': pendulum.duration(minutes=5),
+    # 'retries': 3,
+    # 'retry_delay': pendulum.duration(hours=1),
 }
 
 @dag(
